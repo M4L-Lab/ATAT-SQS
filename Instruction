@@ -1,0 +1,187 @@
+The Alloy-Theoretic Automated Toolkit (ATAT)
+by Axel van de Walle
+
+For detail about how it works, there are two paper
+
+https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.65.353
+
+http://www.mmm.psu.edu/van%20de%20Walle_2013_Calphad_Efficient%20stochastic.pdf
+
+
+#### Dowload ATAT
+The ATAT package could be downloaded at https://www.brown.edu/Departments/Engineering/Labs/avdw/atat/
+
+#### Install ATAT packge
+Install ATAT package by following instruction Charpter 3 (3.0.1 and 3.0.2) of https://www.brown.edu/Departments/Engineering/Labs/avdw/atat/manual.pdf
+
+Before install ATAT package, please follow instruction on the website: https://cniu.me/2017/08/05/SQS.html. I copy and paste the key part below
+#### below is copy from website ###
+The manual has clear instructions. There is a minor complaint about how the mcsqs code handles intermediate SQS, it only saves the last one it finds as bestsqs.out. 
+Even though this makes sense in that the last one always has the best matched correlation functions, there are other factors one needs to consider when selecting a SQS, e.g., the shape of the cell. 
+It is better if all SQS (whether perfect or imperfect) are stored with their correlation functions. This also helps if the user uses a bestsqs for further calculations before the mcsqs finishes searching, and now there is no risk that this bestsqs gets overwritten.
+
+To have this modified version, find the following lines in atat/src/mcsqs.c++ before compilation:
+
+// Line 425 of mcsqs.c++
+int tic=0;
+Real obj=best.obj;
+best.obj=MAXFLOAT;
+while (1) {
+  if (obj<best.obj) {
+    // cerr << "Best" << endl;
+    best=mc(cc);
+    ofstream strfile;
+    open_numbered_file(strfile, "bestsqs",ip,".out");
+    strfile.setf(ios::fixed);
+    strfile.precision(sigdig);
+    write_structure(best.str,ulat,site_type_list,atom_label,axes,strfile);
+    ofstream corrfile;
+    open_numbered_file(corrfile, "bestcorr",ip,".out");
+    corrfile.setf(ios::fixed);
+    corrfile.precision(sigdig);
+Replace the lines above with the following lines:
+
+int tic=0;
+Real obj=best.obj;
+best.obj=MAXFLOAT;
+int count_cniu=1;                                       // added by cniu
+while (1) {
+  if (obj<best.obj) {
+    // cerr << "Best" << endl;
+    best=mc(cc);
+    ofstream strfile;
+    stringstream out_cniu;                              // added by cniu
+    out_cniu << count_cniu++;                           // added by cniu
+    std::string str1_cniu = "bestsqs-";                 // added by cniu
+    str1_cniu += out_cniu.str();                        // added by cniu
+    std::string str2_cniu = "bestcorr-";                // added by cniu
+    str2_cniu += out_cniu.str();                        // added by cniu
+    char *cstr1_cniu = new char[str1_cniu.length()+1];  // added by cniu
+    char *cstr2_cniu = new char[str2_cniu.length()+1];  // added by cniu
+    strcpy(cstr1_cniu,str1_cniu.c_str());               // added by cniu
+    strcpy(cstr2_cniu,str2_cniu.c_str());               // added by cniu
+    open_numbered_file(strfile,cstr1_cniu,ip,".out");   // changed by cniu
+    delete [] cstr1_cniu;                               // added by cniu
+    strfile.setf(ios::fixed);
+    strfile.precision(sigdig);
+    write_structure(best.str,ulat,site_type_list,atom_label,axes,strfile);
+    ofstream corrfile;
+    open_numbered_file(corrfile,cstr2_cniu,ip,".out");  // changed by cniu
+    delete [] cstr2_cniu;                               // added by cniu
+    corrfile.setf(ios::fixed);
+    corrfile.precision(sigdig);
+Then compile ATAT as usual. Now the mcsqs code will save bestsqs-1.out, bestsqs-2.out, etc. with corresponding bestcorr-1.out, bestcorr-2.out, etc.
+
+#####Generate SQS ####
+Two codes from the ATAT package are needed to generate SQS: corrdump and mcsqs.
+
+Run corrdump
+The corrdump code needs an input file called rndstr.in. So let’s first talk about this input file.
+
+The rndstr.in file
+An example for FCC random solid solution:
+
+1 1 1 90 90 90
+.0 .5 .5
+.5 .0 .5
+.5 .5 .0
+.0 .0 .0 Ni=.25,Fe=.25,Cr=.25,Co=.25
+An example for L12 with partial ordering:
+
+1 1 1 90 90 90
+1 0 0
+0 1 0
+0 0 1
+.0 .0 .0 Cr
+.0 .5 .5 Ni=.333333,Fe=.333333,Co=.333334
+.5 .0 .5 Ni=.333333,Fe=.333333,Co=.333334
+.5 .5 .0 Ni=.333333,Fe=.333333,Co=.333334
+An example for HCP random solid solution:
+
+1 1 1.633 90 90 60
+1 0 0
+0 1 0
+0 0 1
+.000000 .000000 .0 Ni=.25,Fe=.25,Cr=.25,Co=.25
+.666667 .666667 .5 Ni=.25,Fe=.25,Cr=.25,Co=.25
+An example for D0-19 with partial ordering:
+
+1 1 1.633 90 90 60
+2 0 0
+0 2 0
+0 0 1
+0.000000 0.000000 0.0 Cr
+0.000000 1.000000 0.0 Ni=.333333,Fe=.333333,Co=.333334
+1.000000 0.000000 0.0 Ni=.333333,Fe=.333333,Co=.333334
+1.000000 1.000000 0.0 Ni=.333333,Fe=.333333,Co=.333334
+0.666667 0.666667 0.5 Cr
+1.666667 0.666667 0.5 Ni=.333333,Fe=.333333,Co=.333334
+0.666667 1.666667 0.5 Ni=.333333,Fe=.333333,Co=.333334
+1.666667 1.666667 0.5 Ni=.333333,Fe=.333333,Co=.333334
+The rndstr.in input file can be divided into three parts: a unit cell (A), a periodic cell (B), and sites (C). 
+The first line defines a unit cell (A) in the Cartesian system by defining the lengths of three vectors, a, b, c, and the angles, alpha, beta, gamma. 
+This line can also be substituted by three lines, which represents the unit cell with a 3x3 matrix, like in a POSCAR. 
+The purpose of the unit cell (A) is to provide a coordinate system in which the periodic cell (B) and sites (C) can be expressed. 
+The next three lines define the periodic cell, which is the smallest supercell that represents the periodicity of the target materials. 
+For example, a FCC random solid solution needs a one-atom FCC primitive cell, a HCP random solid solution needs a two-atom HCP primitive cell, and a L1-2 alloy needs a four-atom FCC cell. 
+The periodic cell is expressed with the unit cell, which means the Cartesian coordinates of the periodic cell equal the multiplication of B and A. 
+The third part is the lattice sites with atomic concentrations. Like the periodic cell (B), the site coordinates in C are also express with the unit cell (A), which means the Cartesian coordinates of the sites equal the multiplication of C and A. 
+The concentrations of each component are suggested not to exceed 6 significant digits. The sum of concentrations on each site must always be 1.
+
+Because the rndstr.in file is all about geometry, it is not necessary to consider the real lattice parameters in real materials. 
+All previous examples use 1 for lattice parameter. This will make it easier to decide the -2, -3 parameters later.
+
+The rndstr.in file does not have anything to do with the final shape of the SQS. All it does is provide all the necessary symmetry input information. 
+The size and shape of the final SQS is controlled by the mcsqs command.
+
+The “-2, -3” parameters
+With the rndstr.in file ready, it is now time to run the first command:
+
+corrdump -l=rndstr.in -ro -noe -nop -clus -2=1.1
+
+The command corrdump reads the lattice file rndstr.in, and calculates symmetries and clusters. 
+This command usually finishes very quickly, unless a very large periodic cell is defined, in which case the output file clusters.out can become really huge and the command needs a few hours or more to finish. 
+The most important parameter of this command is “-2”, which defines the longest distance, or cut-off, when calculating the correlation functions. 
+For example, in the case of FCC random solid solution, whose lattice parameter is 1, the first nearest neighbor distance is 2^.5/2=0.71, the second nearest neighbor distance is 1.0, and the third nearest neighbor distance is 1.5^.5=1.2. 
+So, the cutoff should be any value between 1.0 and 1.2 if the first two shells of nearest neighbors are to be considered for pair correlation functions. 
+Similar to the “-2” parameter, there are “-3” and above parameters for triplet correlation functions or more.
+
+Many beginners are not sure how to determine the -2, -3 values, or how many shells of nearest neighbors to include for the matching of correlation functions. 
+There are no general rules that work for all. Higher cutoff -2, -3 values lead to better disorder in the final structure, but also requires much longer time for the mcsqs code to find a perfectly matched SQS. 
+
+
+#######Run mcsqs
+The second command mcsqs searches SQS using a Monte Carlo algorithm with defined supercell size.
+
+############Regular search
+The regular search for SQS is performed by:
+
+mcsqs -n XX
+
+The number of atoms in the SQS, XX, must be appropriately decided.
+A minimal requirement is that this number must be a multiple of the number of sites in rndstr.in while also allowing integer number of atoms for all elements. 
+For example, a ternary equiatomic L1-2 (4 sites in rndstr.in) SQS must contain at least 12 atoms.
+The best strategy is to start with lower cutoff values (e.g., 2 shells for pairs and ignore triplets) and increase them until a good SQS is reached. 
+Find in the following sections about how to tell if a SQS is good.
+
+
+If the revised version of mcsqs is used, a series of bestsqs-XX.out will be saved. 
+The very last one has the best correlation mismatch, but whether it is the best option for further study is arguable. 
+Usually a SQS which has very long lattice vectors and very small angles between lattice vectors should be avoided, because it is not a comfortable model for DFT calculations.
+
+
+
+If we know what exact cell to fix for the SQS, we can put its lattice vectors in sqscell.out, 
+which can be used to restrict the SQS generation by adding a parameter to the mcsqs command (which overwrites the -n xx parameter):
+
+mcsqs -rc
+
+For example, if we want to build a 2-2-2 fcc supercell with 32 atoms, we can define the sqscell.out as:
+
+1
+
+2 0 0
+0 2 0
+0 0 2
+
+
