@@ -25,3 +25,9 @@ you can solve these errors by adding these two lines into the head of the sqs2po
 
 #include <cstring>
 #include <stdlib.h>
+
+#### TO TRACK THE MC STEP ### 
+add lines ending with "// Added by Yichen" to mcsqs.c++ in ATAT
+It will produce a file called "step_record.txt" 
+The first column is the number of best sqs structures. 
+The second column is the number of mc swap needed to generate the best sqs structures
