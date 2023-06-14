@@ -542,7 +542,7 @@ me},
   Real obj=best.obj;
   best.obj=MAXFLOAT;
   int count_cniu=1;
-  int count_cqian=0; // Added by Yichen
+  int count_cqian=1; // Added by Yichen
   while (1) {
     if (obj<best.obj) {
       // cerr << "Best" << endl;
